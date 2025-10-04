@@ -4,9 +4,9 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tweezers = { git = "https://github.com/xywsxp/academy_city_v3.git" }
-common = { git = "https://github.com/xywsxp/academy_city_v3.git" }
-structure = { git = "https://github.com/xywsxp/academy_city_v3.git" }
+tweezers = { git = "ssh://git@github.com/xywsxp/academy_city_v3.git" }
+common = { git = "ssh://git@github.com/xywsxp/academy_city_v3.git" }
+structure = { git = "ssh://git@github.com/xywsxp/academy_city_v3.git" }
 zstd = { workspace = true }
 rmp-serde = { workspace = true }
 toml.workspace = true
