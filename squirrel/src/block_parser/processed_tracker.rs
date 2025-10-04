@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::fs::{File, OpenOptions};
 use std::io::{BufRead, BufReader, Write, BufWriter};
 use std::path::PathBuf;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 
 pub struct ProcessedTracker {
     log_path: PathBuf,

@@ -1,3 +1,4 @@
+use crate::clickhouse_util;
 use crate::common::slot_meta::SlotMeta;
 use common::async_pool::AsyncPool;
 use common::clickhouse_client::ClickHouseClient;
@@ -6,7 +7,6 @@ use rmp_serde::from_slice;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 use std::path::Path;
-use tweezers::clickhouse_util::convert_transaction::TransactionConverter;
 use tweezers::combinator::solana_combinator::SolanaCombinator;
 use tweezers::normalizer::Normalizer;
 use zstd::stream::read::Decoder;
@@ -14,14 +14,17 @@ use zstd::stream::read::Decoder;
 pub struct FileProcessor {
     async_pool: AsyncPool,
     // 批量积累的数据
-    pumpfun_trade_event_batch: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunTradeEventV2>,
-    pumpfun_create_event_batch: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunCreateEventV2>,
-    pumpfun_migrate_event_batch: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunMigrateEventV2>,
-    pumpfun_amm_buy_event_batch: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunAmmBuyEventV2>,
-    pumpfun_amm_sell_event_batch: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunAmmSellEventV2>,
-    pumpfun_amm_create_pool_event_batch: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunAmmCreatePoolEventV2>,
-    pumpfun_amm_deposit_event_batch: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunAmmDepositEventV2>,
-    pumpfun_amm_withdraw_event_batch: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunAmmWithdrawEventV2>,
+    pumpfun_trade_event_batch: Vec<clickhouse_util::clickhouse_events::PumpfunTradeEventV2>,
+    pumpfun_create_event_batch: Vec<clickhouse_util::clickhouse_events::PumpfunCreateEventV2>,
+    pumpfun_migrate_event_batch: Vec<clickhouse_util::clickhouse_events::PumpfunMigrateEventV2>,
+    pumpfun_amm_buy_event_batch: Vec<clickhouse_util::clickhouse_events::PumpfunAmmBuyEventV2>,
+    pumpfun_amm_sell_event_batch: Vec<clickhouse_util::clickhouse_events::PumpfunAmmSellEventV2>,
+    pumpfun_amm_create_pool_event_batch:
+        Vec<clickhouse_util::clickhouse_events::PumpfunAmmCreatePoolEventV2>,
+    pumpfun_amm_deposit_event_batch:
+        Vec<clickhouse_util::clickhouse_events::PumpfunAmmDepositEventV2>,
+    pumpfun_amm_withdraw_event_batch:
+        Vec<clickhouse_util::clickhouse_events::PumpfunAmmWithdrawEventV2>,
     batch_size: usize, // 批量大小
 }
 
@@ -42,7 +45,11 @@ impl FileProcessor {
     }
 
     /// 处理单个文件对
-    pub async fn process_file_pair(&mut self, meta_path: &Path, bin_path: &Path) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn process_file_pair(
+        &mut self,
+        meta_path: &Path,
+        bin_path: &Path,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let slot_meta = self.load_slot_meta(meta_path)?;
 
         let mut f = File::open(bin_path)?;
@@ -94,10 +101,10 @@ impl FileProcessor {
 
         // 完成进度条
         pb.finish_with_message(format!("Completed processing {}", bin_path.display()));
-        
+
         // 刷新剩余的批量数据
         self.flush_all_batches().await;
-        
+
         // 等待所有 ClickHouse 插入任务完成
         println!("Waiting for all ClickHouse insertions to complete...");
         self.async_pool.wait_all_tasks().await;
@@ -107,7 +114,10 @@ impl FileProcessor {
     }
 
     /// 加载slot元数据
-    fn load_slot_meta(&self, meta_path: &Path) -> Result<Vec<SlotMeta>, Box<dyn std::error::Error>> {
+    fn load_slot_meta(
+        &self,
+        meta_path: &Path,
+    ) -> Result<Vec<SlotMeta>, Box<dyn std::error::Error>> {
         let mut file = File::open(meta_path)?;
         let mut buf = Vec::new();
         file.read_to_end(&mut buf)?;
@@ -123,7 +133,7 @@ impl FileProcessor {
             if let Some(combined_block) = SolanaCombinator::combine_block(&parsed_block) {
                 for tx in combined_block.transactions.iter() {
                     // 直接在 batch Vec 上操作，避免临时 Vec
-                    TransactionConverter::convert(
+                    clickhouse_util::convert_transaction::TransactionConverter::convert(
                         tx,
                         &mut self.pumpfun_trade_event_batch,
                         &mut self.pumpfun_create_event_batch,
@@ -145,16 +155,17 @@ impl FileProcessor {
     /// 检查批量大小并在需要时刷新
     async fn check_and_flush_batches(&mut self) {
         let mut should_flush = false;
-        
+
         // 检查任意一个批量是否达到阈值
-        if self.pumpfun_trade_event_batch.len() >= self.batch_size ||
-           self.pumpfun_create_event_batch.len() >= self.batch_size ||
-           self.pumpfun_migrate_event_batch.len() >= self.batch_size ||
-           self.pumpfun_amm_buy_event_batch.len() >= self.batch_size ||
-           self.pumpfun_amm_sell_event_batch.len() >= self.batch_size ||
-           self.pumpfun_amm_create_pool_event_batch.len() >= self.batch_size ||
-           self.pumpfun_amm_deposit_event_batch.len() >= self.batch_size ||
-           self.pumpfun_amm_withdraw_event_batch.len() >= self.batch_size {
+        if self.pumpfun_trade_event_batch.len() >= self.batch_size
+            || self.pumpfun_create_event_batch.len() >= self.batch_size
+            || self.pumpfun_migrate_event_batch.len() >= self.batch_size
+            || self.pumpfun_amm_buy_event_batch.len() >= self.batch_size
+            || self.pumpfun_amm_sell_event_batch.len() >= self.batch_size
+            || self.pumpfun_amm_create_pool_event_batch.len() >= self.batch_size
+            || self.pumpfun_amm_deposit_event_batch.len() >= self.batch_size
+            || self.pumpfun_amm_withdraw_event_batch.len() >= self.batch_size
+        {
             should_flush = true;
         }
 
@@ -189,14 +200,20 @@ impl FileProcessor {
     /// 提交ClickHouse插入任务  
     fn submit_clickhouse_inserts(
         &self,
-        pumpfun_trade_event_rows: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunTradeEventV2>,
-        pumpfun_create_event_rows: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunCreateEventV2>,
-        pumpfun_migrate_event_rows: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunMigrateEventV2>,
-        pumpfun_amm_buy_event_rows: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunAmmBuyEventV2>,
-        pumpfun_amm_sell_event_rows: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunAmmSellEventV2>,
-        pumpfun_amm_create_pool_event_rows: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunAmmCreatePoolEventV2>,
-        pumpfun_amm_deposit_event_rows: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunAmmDepositEventV2>,
-        pumpfun_amm_withdraw_event_rows: Vec<tweezers::clickhouse_util::clickhouse_events::PumpfunAmmWithdrawEventV2>,
+        pumpfun_trade_event_rows: Vec<clickhouse_util::clickhouse_events::PumpfunTradeEventV2>,
+        pumpfun_create_event_rows: Vec<clickhouse_util::clickhouse_events::PumpfunCreateEventV2>,
+        pumpfun_migrate_event_rows: Vec<clickhouse_util::clickhouse_events::PumpfunMigrateEventV2>,
+        pumpfun_amm_buy_event_rows: Vec<clickhouse_util::clickhouse_events::PumpfunAmmBuyEventV2>,
+        pumpfun_amm_sell_event_rows: Vec<clickhouse_util::clickhouse_events::PumpfunAmmSellEventV2>,
+        pumpfun_amm_create_pool_event_rows: Vec<
+            clickhouse_util::clickhouse_events::PumpfunAmmCreatePoolEventV2,
+        >,
+        pumpfun_amm_deposit_event_rows: Vec<
+            clickhouse_util::clickhouse_events::PumpfunAmmDepositEventV2,
+        >,
+        pumpfun_amm_withdraw_event_rows: Vec<
+            clickhouse_util::clickhouse_events::PumpfunAmmWithdrawEventV2,
+        >,
     ) {
         // 宏来减少重复代码 - 错误会打印到控制台并终止程序
         macro_rules! submit_insert {
@@ -205,24 +222,33 @@ impl FileProcessor {
                     let rows = $rows;
                     self.async_pool.submit(move || async move {
                         let client = ClickHouseClient::instance().client();
-                        
+
                         let mut insert = match client.insert($table) {
                             Ok(insert) => insert,
                             Err(e) => {
-                                eprintln!("❌ FATAL ERROR: Failed to create insert for table {}: {}", $table, e);
+                                eprintln!(
+                                    "❌ FATAL ERROR: Failed to create insert for table {}: {}",
+                                    $table, e
+                                );
                                 std::process::exit(1);
                             }
                         };
-                        
+
                         for (i, row) in rows.iter().enumerate() {
                             if let Err(e) = insert.write(row).await {
-                                eprintln!("❌ FATAL ERROR: Failed to write row {} to table {}: {}", i, $table, e);
+                                eprintln!(
+                                    "❌ FATAL ERROR: Failed to write row {} to table {}: {}",
+                                    i, $table, e
+                                );
                                 std::process::exit(1);
                             }
                         }
-                        
+
                         if let Err(e) = insert.end().await {
-                            eprintln!("❌ FATAL ERROR: Failed to end insert for table {}: {}", $table, e);
+                            eprintln!(
+                                "❌ FATAL ERROR: Failed to end insert for table {}: {}",
+                                $table, e
+                            );
                             std::process::exit(1);
                         }
                     });
@@ -235,9 +261,18 @@ impl FileProcessor {
         submit_insert!(pumpfun_migrate_event_rows, "pumpfun_migrate_event_v2");
         submit_insert!(pumpfun_amm_buy_event_rows, "pumpfun_amm_buy_event_v2");
         submit_insert!(pumpfun_amm_sell_event_rows, "pumpfun_amm_sell_event_v2");
-        submit_insert!(pumpfun_amm_create_pool_event_rows, "pumpfun_amm_create_pool_event_v2");
-        submit_insert!(pumpfun_amm_deposit_event_rows, "pumpfun_amm_deposit_event_v2");
-        submit_insert!(pumpfun_amm_withdraw_event_rows, "pumpfun_amm_withdraw_event_v2");
+        submit_insert!(
+            pumpfun_amm_create_pool_event_rows,
+            "pumpfun_amm_create_pool_event_v2"
+        );
+        submit_insert!(
+            pumpfun_amm_deposit_event_rows,
+            "pumpfun_amm_deposit_event_v2"
+        );
+        submit_insert!(
+            pumpfun_amm_withdraw_event_rows,
+            "pumpfun_amm_withdraw_event_v2"
+        );
     }
 
     /// 完成所有任务并等待协程池关闭
