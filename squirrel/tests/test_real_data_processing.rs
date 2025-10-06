@@ -6,6 +6,7 @@ use std::time::Instant;
 use tokio::time::{timeout, Duration};
 
 #[tokio::test]
+#[ignore]
 async fn test_real_cank_data_processing() {
     // 检查Cank目录是否存在
     let cank_dir = Path::new("/home/gold_dog/Cank/Archieve");
@@ -78,6 +79,7 @@ async fn test_real_cank_data_processing() {
 }
 
 #[tokio::test]
+#[ignore]
 async fn test_limited_cank_data_processing() {
     // 检查Cank目录是否存在
     let cank_dir = Path::new("/home/gold_dog/Cank/Archieve");

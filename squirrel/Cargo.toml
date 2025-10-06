@@ -4,10 +4,10 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-tweezers = { git = "ssh://git@github.com/xywsxp/academy_city_v3.git" }
-common = { git = "ssh://git@github.com/xywsxp/academy_city_v3.git" }
-structure = { git = "ssh://git@github.com/xywsxp/academy_city_v3.git" }
-proto_lib = { git = "ssh://git@github.com/xywsxp/academy_city_v3.git" }
+tweezers = { workspace = true }
+common = { workspace = true }
+structure = { workspace = true }
+proto_lib = { workspace = true }
 zstd = { workspace = true }
 rmp-serde = { workspace = true }
 toml.workspace = true
@@ -17,6 +17,7 @@ tokio = { workspace = true, features = ["rt-multi-thread", "macros"] }
 chrono = { workspace = true }
 clickhouse = { workspace = true }
 indicatif.workspace = true
+utils = { path = "../utils" }
 
 [dev-dependencies]
 tempfile = "3.0"

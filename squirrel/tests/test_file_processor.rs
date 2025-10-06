@@ -1,5 +1,5 @@
 use squirrel::block_parser::file_processor::FileProcessor;
-use squirrel::common::slot_meta::SlotMeta;
+use utils::slot_meta::SlotMeta;
 use tempfile::TempDir;
 use std::fs::File;
 use std::io::Write;

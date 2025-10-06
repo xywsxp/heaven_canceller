@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["squirrel"]
+members = ["squirrel", "syncer", "utils"]
 
 [workspace.dependencies]
 # squirrel 直接需要的依赖
@@ -12,10 +12,19 @@ tokio = { version = "1.0", features = ["full"] }
 chrono = {version = "0.4.42", features = ["serde"] }
 clickhouse = { version = "0.13.3" , features = ["inserter"]}
 indicatif = "0.18"
+# Parquet相关依赖
+arrow = "56.2.0"
+parquet = "56.2.0"
+tempfile = "3.23.0"
+serde_arrow = { version = "0.13.6", features = ["arrow-56"] }
+tweezers = { git = "ssh://git@github.com/xywsxp/academy_city_v3.git" }
+common = { git = "ssh://git@github.com/xywsxp/academy_city_v3.git" }
+structure = { git = "ssh://git@github.com/xywsxp/academy_city_v3.git" }
+proto_lib = { git = "ssh://git@github.com/xywsxp/academy_city_v3.git" }
 
 [profile.release]
 opt-level = 3
 lto = true
 codegen-units = 1
-panic = "abort"
+members = ["squirrel", "utils"]
 incremental = false

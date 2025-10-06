@@ -1,5 +1,5 @@
 use squirrel::block_parser::block_parser_service::{BlockParserService, Config};
-use squirrel::common::slot_meta::SlotMeta;
+use utils::slot_meta::SlotMeta;
 use tempfile::TempDir;
 use std::fs::File;
 use rmp_serde;

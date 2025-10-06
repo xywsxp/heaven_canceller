@@ -1,7 +1,7 @@
 use crate::clickhouse_util;
-use crate::common::slot_meta::SlotMeta;
+use utils::slot_meta::SlotMeta;
 use common::async_pool::AsyncPool;
-use common::clickhouse_client::ClickHouseClient;
+use utils::clickhouse_client::ClickHouseClient;
 use indicatif::{ProgressBar, ProgressStyle};
 use rmp_serde::from_slice;
 use std::fs::File;

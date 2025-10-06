@@ -1,4 +1,4 @@
-use squirrel::common::slot_meta::SlotMeta;
+use utils::slot_meta::SlotMeta;
 use std::fs::File;
 use std::io::Read;
 
