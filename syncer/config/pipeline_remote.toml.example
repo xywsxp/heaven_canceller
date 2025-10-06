@@ -1,0 +1,25 @@
+# 远程存储路径（接收本地传输的数据）
+remote_storage_path = "/remote/data/imports"
+
+# 源表文件夹 -> 目标表映射
+# 格式: 源文件夹名 = "目标表名"
+[import_mappings]
+pumpfun_trade_event_v2 = "pumpfun_trade_event_v2_target"
+pumpfun_create_event_v2 = "pumpfun_create_event_v2_target"
+pumpfun_complete_event_v2 = "pumpfun_complete_event_v2_target"
+pumpfun_set_params_event_v2 = "pumpfun_set_params_event_v2_target"
+raydium_swap_event_v2 = "raydium_swap_event_v2_target"
+raydium_init_pool_event_v2 = "raydium_init_pool_event_v2_target"
+raydium_lp_change_event_v2 = "raydium_lp_change_event_v2_target"
+jupiter_swap_event_v2 = "jupiter_swap_event_v2_target"
+
+# 表名 -> 事件类型映射（用于反序列化）
+[table_event_mappings]
+pumpfun_trade_event_v2 = "PumpfunTradeEventV2"
+pumpfun_create_event_v2 = "PumpfunCreateEventV2"
+pumpfun_complete_event_v2 = "PumpfunCompleteEventV2"
+pumpfun_set_params_event_v2 = "PumpfunSetParamsEventV2"
+raydium_swap_event_v2 = "RaydiumSwapEventV2"
+raydium_init_pool_event_v2 = "RaydiumInitPoolEventV2"
+raydium_lp_change_event_v2 = "RaydiumLpChangeEventV2"
+jupiter_swap_event_v2 = "JupiterSwapEventV2"
