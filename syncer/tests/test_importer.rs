@@ -173,17 +173,59 @@ async fn test_round_trip_data_integrity() {
 }
 
 #[tokio::test]
-async fn test_invalid_event_type() {
+async fn test_invalid_parquet_file() {
+    // 测试无效的 Parquet 文件（文件损坏）
     let temp_dir = tempdir().unwrap();
-    let fake_file = temp_dir.path().join("fake.parquet");
+    let fake_file = temp_dir.path().join("corrupted.parquet");
     
-    // 创建一个假文件
-    std::fs::write(&fake_file, b"fake data").unwrap();
+    // 创建一个损坏的文件
+    std::fs::write(&fake_file, b"this is not a valid parquet file").unwrap();
     
     let importer = ClickHouseImporter::new();
     
     let result = importer
-        .import_parquet(&fake_file, "test_table", "InvalidEventType")
+        .import_parquet(&fake_file, "test_table", "PumpfunTradeEventV2")
+        .await;
+    
+    assert!(result.is_err(), "Should fail with corrupted parquet file");
+    
+    if let Err(e) = result {
+        let error_msg = e.to_string();
+        assert!(
+            error_msg.contains("Parquet") || error_msg.contains("footer") || error_msg.contains("Invalid"),
+            "Error should mention parquet corruption: {}",
+            error_msg
+        );
+        println!("✓ Correctly rejected corrupted parquet file: {}", error_msg);
+    }
+}
+
+#[tokio::test]
+#[ignore = "integration test, requires ClickHouse"]
+async fn test_invalid_event_type() {
+    // 测试有效的 Parquet 但事件类型不匹配
+    let temp_dir = tempdir().unwrap();
+    let date = NaiveDate::from_ymd_opt(2025, 10, 1).unwrap();
+    
+    // 1. 创建一个有效的 Parquet 文件
+    let extractor = ClickHouseExtractor::new();
+    let parquet_helper = ParquetHelper::new();
+    
+    let batch = extractor
+        .extract_daily_events("pumpfun_trade_event_v2", "PumpfunTradeEventV2", date)
+        .await
+        .expect("Failed to extract test data");
+    
+    let parquet_file = parquet_helper
+        .write_daily_parquet("test_invalid_type", date, batch, temp_dir.path())
+        .await
+        .expect("Failed to write parquet");
+    
+    // 2. 尝试用错误的事件类型导入
+    let importer = ClickHouseImporter::new();
+    
+    let result = importer
+        .import_parquet(&parquet_file, "test_table", "InvalidEventType")
         .await;
     
     assert!(result.is_err(), "Should fail with invalid event type");
