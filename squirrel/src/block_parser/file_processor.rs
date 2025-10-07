@@ -1,5 +1,6 @@
-use crate::clickhouse_util;
 use utils::slot_meta::SlotMeta;
+use utils::convert_transaction;
+use utils::clickhouse_events;
 use common::async_pool::AsyncPool;
 use utils::clickhouse_client::ClickHouseClient;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -14,17 +15,17 @@ use zstd::stream::read::Decoder;
 pub struct FileProcessor {
     async_pool: AsyncPool,
     // 批量积累的数据
-    pumpfun_trade_event_batch: Vec<clickhouse_util::clickhouse_events::PumpfunTradeEventV2>,
-    pumpfun_create_event_batch: Vec<clickhouse_util::clickhouse_events::PumpfunCreateEventV2>,
-    pumpfun_migrate_event_batch: Vec<clickhouse_util::clickhouse_events::PumpfunMigrateEventV2>,
-    pumpfun_amm_buy_event_batch: Vec<clickhouse_util::clickhouse_events::PumpfunAmmBuyEventV2>,
-    pumpfun_amm_sell_event_batch: Vec<clickhouse_util::clickhouse_events::PumpfunAmmSellEventV2>,
+    pumpfun_trade_event_batch: Vec<clickhouse_events::PumpfunTradeEventV2>,
+    pumpfun_create_event_batch: Vec<clickhouse_events::PumpfunCreateEventV2>,
+    pumpfun_migrate_event_batch: Vec<clickhouse_events::PumpfunMigrateEventV2>,
+    pumpfun_amm_buy_event_batch: Vec<clickhouse_events::PumpfunAmmBuyEventV2>,
+    pumpfun_amm_sell_event_batch: Vec<clickhouse_events::PumpfunAmmSellEventV2>,
     pumpfun_amm_create_pool_event_batch:
-        Vec<clickhouse_util::clickhouse_events::PumpfunAmmCreatePoolEventV2>,
+        Vec<clickhouse_events::PumpfunAmmCreatePoolEventV2>,
     pumpfun_amm_deposit_event_batch:
-        Vec<clickhouse_util::clickhouse_events::PumpfunAmmDepositEventV2>,
+        Vec<clickhouse_events::PumpfunAmmDepositEventV2>,
     pumpfun_amm_withdraw_event_batch:
-        Vec<clickhouse_util::clickhouse_events::PumpfunAmmWithdrawEventV2>,
+        Vec<clickhouse_events::PumpfunAmmWithdrawEventV2>,
     batch_size: usize, // 批量大小
 }
 
@@ -133,7 +134,7 @@ impl FileProcessor {
             if let Some(combined_block) = SolanaCombinator::combine_block(&parsed_block) {
                 for tx in combined_block.transactions.iter() {
                     // 直接在 batch Vec 上操作，避免临时 Vec
-                    clickhouse_util::convert_transaction::TransactionConverter::convert(
+                    convert_transaction::TransactionConverter::convert(
                         tx,
                         &mut self.pumpfun_trade_event_batch,
                         &mut self.pumpfun_create_event_batch,
@@ -200,19 +201,19 @@ impl FileProcessor {
     /// 提交ClickHouse插入任务  
     fn submit_clickhouse_inserts(
         &self,
-        pumpfun_trade_event_rows: Vec<clickhouse_util::clickhouse_events::PumpfunTradeEventV2>,
-        pumpfun_create_event_rows: Vec<clickhouse_util::clickhouse_events::PumpfunCreateEventV2>,
-        pumpfun_migrate_event_rows: Vec<clickhouse_util::clickhouse_events::PumpfunMigrateEventV2>,
-        pumpfun_amm_buy_event_rows: Vec<clickhouse_util::clickhouse_events::PumpfunAmmBuyEventV2>,
-        pumpfun_amm_sell_event_rows: Vec<clickhouse_util::clickhouse_events::PumpfunAmmSellEventV2>,
+        pumpfun_trade_event_rows: Vec<clickhouse_events::PumpfunTradeEventV2>,
+        pumpfun_create_event_rows: Vec<clickhouse_events::PumpfunCreateEventV2>,
+        pumpfun_migrate_event_rows: Vec<clickhouse_events::PumpfunMigrateEventV2>,
+        pumpfun_amm_buy_event_rows: Vec<clickhouse_events::PumpfunAmmBuyEventV2>,
+        pumpfun_amm_sell_event_rows: Vec<clickhouse_events::PumpfunAmmSellEventV2>,
         pumpfun_amm_create_pool_event_rows: Vec<
-            clickhouse_util::clickhouse_events::PumpfunAmmCreatePoolEventV2,
+            clickhouse_events::PumpfunAmmCreatePoolEventV2,
         >,
         pumpfun_amm_deposit_event_rows: Vec<
-            clickhouse_util::clickhouse_events::PumpfunAmmDepositEventV2,
+            clickhouse_events::PumpfunAmmDepositEventV2,
         >,
         pumpfun_amm_withdraw_event_rows: Vec<
-            clickhouse_util::clickhouse_events::PumpfunAmmWithdrawEventV2,
+            clickhouse_events::PumpfunAmmWithdrawEventV2,
         >,
     ) {
         // 宏来减少重复代码 - 错误会打印到控制台并终止程序
