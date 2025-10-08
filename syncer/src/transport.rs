@@ -2,18 +2,35 @@ use std::error::Error;
 use std::path::Path;
 use crate::config::RemoteServerConfig;
 use tokio::process::Command;
+use tokio::time::{sleep, Duration};
 
 pub type Result<T> = std::result::Result<T, Box<dyn Error>>;
 
 /// 基于 rsync 的传输器
-pub struct RsyncTransport;
+pub struct RsyncTransport {
+    /// 最大重试次数
+    max_retries: usize,
+    /// 初始重试延迟（秒）
+    initial_retry_delay: u64,
+}
 
 impl RsyncTransport {
     pub fn new() -> Self {
-        Self
+        Self {
+            max_retries: 5,
+            initial_retry_delay: 5,
+        }
     }
 
-    /// 同步本地目录到远程服务器
+    /// 创建带自定义重试配置的传输器
+    pub fn with_retry_config(max_retries: usize, initial_retry_delay: u64) -> Self {
+        Self {
+            max_retries,
+            initial_retry_delay,
+        }
+    }
+
+    /// 同步本地目录到远程服务器（带自动重试）
     /// 
     /// # Arguments
     /// * `local_dir` - 本地目录路径（表目录）
@@ -31,9 +48,9 @@ impl RsyncTransport {
             return Err(format!("Local directory does not exist: {:?}", local_dir).into());
         }
 
-        // 构建 SSH 选项
+        // 构建 SSH 选项（添加连接超时和重连参数）
         let ssh_opts = format!(
-            "ssh -p {} -i {}",
+            "ssh -p {} -i {} -o ConnectTimeout=30 -o ServerAliveInterval=60 -o ServerAliveCountMax=3 -o TCPKeepAlive=yes",
             remote_config.port,
             remote_config.private_key_path.display()
         );
@@ -53,15 +70,54 @@ impl RsyncTransport {
         println!("   Source: {}", local_src);
         println!("   Destination: {}", remote_dest);
 
+        // 带重试的执行逻辑
+        let mut last_error = None;
+        for attempt in 0..=self.max_retries {
+            if attempt > 0 {
+                let delay = self.initial_retry_delay * (2_u64.pow(attempt as u32 - 1));
+                println!("   ⏳ Retry attempt {}/{} after {} seconds...", 
+                    attempt, self.max_retries, delay);
+                sleep(Duration::from_secs(delay)).await;
+            }
+
+            match self.execute_rsync(&local_src, &remote_dest, &ssh_opts).await {
+                Ok(()) => {
+                    if attempt > 0 {
+                        println!("   ✅ Successfully recovered after {} retry attempts", attempt);
+                    }
+                    return Ok(());
+                }
+                Err(e) => {
+                    last_error = Some(e);
+                    if attempt < self.max_retries {
+                        eprintln!("   ⚠️  Attempt {} failed, will retry...", attempt + 1);
+                    }
+                }
+            }
+        }
+
+        // 所有重试都失败了
+        Err(last_error.unwrap_or_else(|| "Unknown error".into()))
+    }
+
+    /// 执行单次 rsync 命令
+    async fn execute_rsync(
+        &self,
+        local_src: &str,
+        remote_dest: &str,
+        ssh_opts: &str,
+    ) -> Result<()> {
         // 执行 rsync 命令
         let output = Command::new("rsync")
             .arg("-avz")           // archive, verbose, compress
             .arg("--progress")     // 显示进度
-            .arg("--update")       // 跳过接收端更新的文件（断点续传）
+            .arg("--partial")      // 保留部分传输的文件（断点续传）
+            .arg("--timeout=3000")  // 设置超时时间（秒）
+            .arg("--bwlimit=2048")
             .arg("-e")
-            .arg(&ssh_opts)        // SSH 选项
-            .arg(&local_src)       // 源路径
-            .arg(&remote_dest)     // 目标路径
+            .arg(ssh_opts)         // SSH 选项
+            .arg(local_src)        // 源路径
+            .arg(remote_dest)      // 目标路径
             .output()
             .await?;
 
