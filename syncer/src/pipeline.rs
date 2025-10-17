@@ -118,7 +118,7 @@ impl LocalPipeline {
 /// 
 /// 负责: 扫描文件 -> 读取 Parquet -> 导入
 pub struct RemotePipeline {
-    parquet_helper: ParquetHelper,
+    _parquet_helper: ParquetHelper,
     importer: ClickHouseImporter,
     config: RemoteConfig,
 }
@@ -126,7 +126,7 @@ pub struct RemotePipeline {
 impl RemotePipeline {
     pub fn new(config: RemoteConfig) -> Self {
         Self {
-            parquet_helper: ParquetHelper::new(),
+            _parquet_helper: ParquetHelper::new(),
             importer: ClickHouseImporter::new(),
             config,
         }

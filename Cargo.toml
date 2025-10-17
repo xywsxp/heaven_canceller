@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["squirrel", "syncer", "utils"]
+members = [ "misaka_signal","squirrel", "syncer", "utils"]
 
 [workspace.dependencies]
 # squirrel 直接需要的依赖
@@ -27,5 +27,4 @@ proto_lib = { git = "ssh://git@github.com/xywsxp/academy_city_v3.git" }
 opt-level = 3
 lto = true
 codegen-units = 1
-members = ["squirrel", "utils"]
 incremental = false

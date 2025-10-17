@@ -1,0 +1,68 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";  // 必须保留，timestamp 字段需要
+
+package misaka_network;
+
+message MisakaSignal {
+  string signal_type = 1;
+  google.protobuf.Timestamp timestamp = 2;
+  string uuid = 3;
+  string parent_uuid = 4;
+  string sender_agent = 5;
+
+  enum AuthorityLevel {
+    LV0 = 0;
+    LV1 = 1;
+    LV2 = 2;
+    LV3 = 3;
+    LV4 = 4;
+    LV5 = 5;
+  }
+  AuthorityLevel authority = 6;
+
+  oneof content {
+    string text = 7;
+    bytes binary_data = 14;  // 您新增的二进制数据字段
+  }
+}
+
+// 发布 MisakaSignal
+message EmitMisakaSignalRequest {
+  string telepath_name = 1;
+  MisakaSignal signal = 2;
+}
+
+message EmitMisakaSignalResponse {
+  string status = 1;
+  string message_id = 2;
+}
+
+// 拉取 MisakaSignal
+message PullMisakaSignalRequest {
+  string agent_id = 1;
+  string telepath_name = 2;
+  int32 batch = 3;
+}
+
+message PullMisakaSignalResponse {
+  bool found = 1;
+  repeated MisakaSignal signal = 2;
+}
+
+// 订阅 Telepath 通道
+message SubscribeTelepathRequest {
+  string agent_id = 1;
+  string telepath_name = 2;
+}
+
+message SubscribeTelepathResponse {
+  string status = 1;
+}
+
+// 服务定义
+service MisakaNetworkService {
+  rpc EmitMisakaSignal(EmitMisakaSignalRequest) returns (EmitMisakaSignalResponse);
+  rpc PullMisakaSignal(PullMisakaSignalRequest) returns (PullMisakaSignalResponse);
+  rpc SubscribeTelepath(SubscribeTelepathRequest) returns (SubscribeTelepathResponse);
+}

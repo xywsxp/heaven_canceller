@@ -1,0 +1,17 @@
+# NATS连接配置
+nats_url = "nats://localhost:4222"
+topic = "geyser.shyft_finalized"
+
+# ClickHouse并发控制
+max_concurrent_clickhouse_tasks = 10
+
+# ClickHouse表名映射
+[tables]
+pumpfun_trade_event = "pumpfun_trade_event_v2"
+pumpfun_create_event = "pumpfun_create_event_v2"
+pumpfun_migrate_event = "pumpfun_migrate_event_v2"
+pumpfun_amm_buy_event = "pumpfun_amm_buy_event_v2"
+pumpfun_amm_sell_event = "pumpfun_amm_sell_event_v2"
+pumpfun_amm_create_pool_event = "pumpfun_amm_create_pool_event_v2"
+pumpfun_amm_deposit_event = "pumpfun_amm_deposit_event_v2"
+pumpfun_amm_withdraw_event = "pumpfun_amm_withdraw_event_v2"

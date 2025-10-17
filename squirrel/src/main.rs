@@ -1,5 +1,6 @@
 use std::env;
-use squirrel::block_parser::block_parser_service::{BlockParserService, Config};
+use squirrel::block_parser::block_parser_service::{BlockParserService, Config as BlockParserConfig};
+use squirrel::transaction_subscriber::transaction_subscriber_service::{TransactionSubscriberService, Config as TransactionSubscriberConfig};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -32,12 +33,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             println!("Config file: {}", config_path);
             
             // 加载配置文件
-            let config = Config::from_toml_file(&config_path)?;
+            let config = BlockParserConfig::from_toml_file(&config_path)?;
             println!("Configuration loaded successfully");
             
             // 创建并启动服务
             let service = BlockParserService::new(config)?;
             println!("BlockParserService initialized, starting processing...");
+            
+            // 启动服务（这会消费 service）
+            service.run().await?;
+        }
+        "transaction_subscriber" => {
+            println!("Starting Transaction Subscriber Service...");
+            println!("Config file: {}", config_path);
+            
+            // 加载配置文件
+            let config = TransactionSubscriberConfig::from_toml_file(&config_path)?;
+            println!("Configuration loaded successfully");
+            
+            // 创建并启动服务
+            let service = TransactionSubscriberService::new(config).await?;
+            println!("TransactionSubscriberService initialized, starting processing...");
             
             // 启动服务（这会消费 service）
             service.run().await?;
@@ -55,8 +71,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 fn print_usage() {
     println!("Usage: squirrel --mode=<MODE> --config=<CONFIG_FILE>");
     println!("Modes:");
-    println!("  block_parser    Start the block parser service");
+    println!("  block_parser            Start the block parser service");
+    println!("  transaction_subscriber  Start the transaction subscriber service");
     println!("");
     println!("Examples:");
-    println!("  squirrel --mode=block_parser --config=example_config/block_parser_config.toml");
+    println!("  squirrel --mode=block_parser --config=config/block_parser_config.toml");
+    println!("  squirrel --mode=transaction_subscriber --config=config/transaction_subscriber.toml");
 }

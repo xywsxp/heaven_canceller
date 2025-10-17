@@ -1,0 +1,11 @@
+# NATS 配置
+nats_url = "nats://localhost:4222"
+topic = "geyser.shyft_processed"
+
+# gRPC 配置
+grpc_server_url = "http://localhost:50065"
+telepath_name = "transaction_simulator_v2"
+
+# Signal 元数据配置
+sender_agent = "env.transaction_v2"
+authority_level = "LV0"

@@ -18,6 +18,9 @@ chrono = { workspace = true }
 clickhouse = { workspace = true }
 indicatif.workspace = true
 utils = { path = "../utils" }
+tokio-stream = "0.1.17"
+transaction = "0.2.1"
+prost = "0.14.1"
 
 [dev-dependencies]
 tempfile = "3.0"

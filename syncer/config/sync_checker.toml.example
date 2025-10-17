@@ -1,0 +1,37 @@
+# ClickHouse 同步检查器配置
+
+# ========== 本地 ClickHouse 配置 ==========
+local_url = "http://localhost:18123"
+local_database = "default"
+local_user = "default"
+local_password = ""
+
+# ========== 远程 ClickHouse 配置 ==========
+remote_url = "http://remote-host:28123"
+remote_database = "default"
+remote_user = "default"
+remote_password = ""
+
+# ========== 同步配置 ==========
+# 检查最近 7 天的数据
+check_days = 7
+
+# 本地数据延迟 2 小时（避免检查还未完全同步的数据）
+lag_hours = 2
+
+# ========== 表映射配置 ==========
+# 格式：本地表名 = 远程表名
+# 如果本地和远程表名相同，也需要显式配置
+
+[table_mappings]
+"pumpfun_trade_event_v2" = "pumpfun_trade_event_v2"
+"pumpfun_create_event_v2" = "pumpfun_create_event_v2"
+"pumpfun_migrate_event_v2" = "pumpfun_migrate_event_v2"
+"pumpfun_amm_buy_event_v2" = "pumpfun_amm_buy_event_v2"
+"pumpfun_amm_sell_event_v2" = "pumpfun_amm_sell_event_v2"
+"pumpfun_amm_create_pool_event_v2" = "pumpfun_amm_create_pool_event_v2"
+"pumpfun_amm_deposit_event_v2" = "pumpfun_amm_deposit_event_v2"
+"pumpfun_amm_withdraw_event_v2" = "pumpfun_amm_withdraw_event_v2"
+
+# 示例：本地和远程表名不同的情况
+# "local_events_table" = "remote_events_table"
