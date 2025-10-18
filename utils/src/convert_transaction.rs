@@ -32,6 +32,8 @@ impl TransactionConverter {
                                 (&instr.parsed, &prev_instr.parsed)
                             {
                                 if let proto_lib::transaction::solana::instruction::Parsed::PumpfunTradeEvent(trade_event) = parsed_event {
+                                    // TradeEvent可以由Buy或BuyExactSolIn触发，但event本身已包含所有数据
+                                    // 我们不需要区分是哪个指令触发的，因为event数据是一致的
                                     let event_v2 = PumpfunTradeEventV2 {
                                         signature: global_bs58().encode_64(&tx.signature),
                                         slot: tx.slot,
@@ -117,6 +119,7 @@ impl TransactionConverter {
                             if let (Some(parsed_event), Some(parsed_instr)) =
                                 (&instr.parsed, &prev_instr.parsed)
                             {
+                                // 处理普通Buy指令
                                 if let (
                                     proto_lib::transaction::solana::instruction::Parsed::PumpfunAmmBuyEvent(buy_event),
                                     proto_lib::transaction::solana::instruction::Parsed::PumpfunAmmBuy(buy_instr)
@@ -158,6 +161,51 @@ impl TransactionConverter {
                                             current_sol_volume: buy_event.current_sol_volume,
                                             last_update_timestamp: buy_event.last_update_timestamp,
                                             is_main_pool: buy_instr.is_main_pool as u8,
+                                        };
+                                        pumpfun_amm_buy_event_rows.push(event_v2);
+                                    }
+                                // 处理BuyExactQuoteIn指令
+                                } else if let (
+                                    proto_lib::transaction::solana::instruction::Parsed::PumpfunAmmBuyEvent(buy_event),
+                                    proto_lib::transaction::solana::instruction::Parsed::PumpfunAmmBuyExactQuoteIn(buy_exact_instr)
+                                ) = (parsed_event, parsed_instr) {
+                                    if let Some(accounts) = &buy_exact_instr.accounts {
+                                        let event_v2 = PumpfunAmmBuyEventV2 {
+                                            signature: global_bs58().encode_64(&tx.signature),
+                                            slot: tx.slot,
+                                            transaction_index: tx.index as u32,
+                                            instruction_index: index as u32,
+                                            base_mint: global_bs58().encode_32(&accounts.base_mint),
+                                            quote_mint: global_bs58().encode_32(&accounts.quote_mint),
+                                            timestamp: buy_event.timestamp as u32,
+                                            base_amount_out: buy_event.base_amount_out,
+                                            max_quote_amount_in: buy_event.max_quote_amount_in,
+                                            user_base_token_reserves: buy_event.user_base_token_reserves,
+                                            user_quote_token_reserves: buy_event.user_quote_token_reserves,
+                                            pool_base_token_reserves: buy_event.pool_base_token_reserves,
+                                            pool_quote_token_reserves: buy_event.pool_quote_token_reserves,
+                                            quote_amount_in: buy_event.quote_amount_in,
+                                            lp_fee_basis_points: buy_event.lp_fee_basis_points,
+                                            lp_fee: buy_event.lp_fee,
+                                            protocol_fee_basis_points: buy_event.protocol_fee_basis_points,
+                                            protocol_fee: buy_event.protocol_fee,
+                                            quote_amount_in_with_lp_fee: buy_event.quote_amount_in_with_lp_fee,
+                                            user_quote_amount_in: buy_event.user_quote_amount_in,
+                                            pool: global_bs58().encode_32(&accounts.pool),
+                                            user: global_bs58().encode_32(&accounts.user),
+                                            user_base_token_account: global_bs58().encode_32(&accounts.user_base_token_account),
+                                            user_quote_token_account: global_bs58().encode_32(&accounts.user_quote_token_account),
+                                            protocol_fee_recipient: global_bs58().encode_32(&accounts.protocol_fee_recipient),
+                                            protocol_fee_recipient_token_account: global_bs58().encode_32(&accounts.protocol_fee_recipient_token_account),
+                                            coin_creator: global_bs58().encode_32(&buy_event.coin_creator),
+                                            coin_creator_fee_basis_points: buy_event.coin_creator_fee_basis_points,
+                                            coin_creator_fee: buy_event.coin_creator_fee,
+                                            track_volume: buy_event.track_volume as u8,
+                                            total_unclaimed_tokens: buy_event.total_unclaimed_tokens,
+                                            total_claimed_tokens: buy_event.total_claimed_tokens,
+                                            current_sol_volume: buy_event.current_sol_volume,
+                                            last_update_timestamp: buy_event.last_update_timestamp,
+                                            is_main_pool: buy_exact_instr.is_main_pool as u8,
                                         };
                                         pumpfun_amm_buy_event_rows.push(event_v2);
                                     }
