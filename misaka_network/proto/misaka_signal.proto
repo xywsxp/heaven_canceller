@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package misaka_network_v2;
+
+import "google/protobuf/timestamp.proto";
+
+message MisakaSignal {
+  // 元数据
+  google.protobuf.Timestamp timestamp = 1;
+  string uuid = 2;
+  string parent_uuid = 3;
+  string sender_agent = 4;
+  
+  // 信号级别 (LV0-LV5)
+  enum AuthorityLevel {
+    LV0 = 0;
+    LV1 = 1;
+    LV2 = 2;
+    LV3 = 3;
+    LV4 = 4;
+    LV5 = 5;
+  }
+  AuthorityLevel authority = 5;
+  
+  // 内容类型标识（业务层自定义）
+  string content_type = 6;
+  
+  // 消息体（二进制数据）
+  bytes payload = 7;
+}

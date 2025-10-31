@@ -201,8 +201,9 @@ impl SignalService {
         bytes_counter: Arc<AtomicU64>,
     ) -> Result<(), Box<dyn std::error::Error>> {
         // 1. 序列化为 MessagePack（记录时间）
+        // 使用 to_vec_named 以生成 map 格式（字段名作为 key），而非 compact 数组格式
         let start = std::time::Instant::now();
-        let msgpack_bytes = rmp_serde::to_vec(&event_bundle).unwrap_or_else(|e| {
+        let msgpack_bytes = rmp_serde::to_vec_named(&event_bundle).unwrap_or_else(|e| {
             eprintln!("❌ FATAL: Failed to serialize EventBundle: {:?}", e);
             std::process::exit(1);
         });

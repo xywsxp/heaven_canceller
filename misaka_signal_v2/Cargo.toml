@@ -1,0 +1,19 @@
+[package]
+name = "misaka_signal_v2"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow.workspace = true
+chrono.workspace = true
+clap = { version = "4.5.51", features = ["derive"] }
+prost = "0.14.1"
+prost-types = "0.14.1"
+serde = { workspace = true, features = ["derive"] }
+tokio = { workspace = true, features = ["full"] }
+tokio-stream = "0.1.17"
+toml.workspace = true
+uuid = { version = "1.18.1", features = ["v4"] }
+common = { workspace = true }
+proto_lib = { workspace = true }
+misaka_network = { path = "../misaka_network" }
